@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kikoni Hills Hotel Receipt</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #0f172a;
+      --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --shadow: 0 10px 35px rgba(15, 23, 42, 0.12);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px; background: var(--bg);
+      font-family: var(--sans); color: var(--text);
+      display: flex; justify-content: center; min-height: 100vh;
+    }
+    .layout {
+      width: min(1080px, 100%);
+      display: grid; grid-template-columns: 360px 1fr; gap: 18px;
+    }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+    .panel, .receipt-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px;
+    }
+    h2 { margin: 0 0 12px; font-size: 18px; color: var(--accent); }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    label { font-size: 13px; color: var(--muted); }
+    input, select, textarea {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--border); font-size: 14px;
+      font-family: var(--sans); background: #f9fafb;
+    }
+    textarea { min-height: 70px; }
+    .actions { display: flex; gap: 10px; margin-top: 10px; }
+    button {
+      cursor: pointer; border: none; border-radius: 10px;
+      padding: 12px 14px; font-weight: 700; font-size: 14px;
+      color: #fff; background: linear-gradient(135deg, #0f172a, #1f2937);
+      box-shadow: 0 8px 22px rgba(31, 41, 55, 0.35);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(31, 41, 55, 0.42); }
+    button:active { transform: translateY(0); box-shadow: 0 6px 18px rgba(31, 41, 55, 0.3); }
+    .receipt-wrapper { display: flex; justify-content: center; }
+    .receipt {
+      width: 360px; background: #fff; color: #000; border: 1px solid #111;
+      padding: 16px; font-family: var(--mono); letter-spacing: 0.02em;
+    }
+    .receipt h1 { font-size: 18px; margin: 0; text-align: center; }
+    .center { text-align: center; }
+    .muted { color: #555; font-size: 12px; }
+    .line { border-top: 1px dashed #111; margin: 10px 0; }
+    .row { display: flex; justify-content: space-between; font-size: 13px; }
+    .row + .row { margin-top: 4px; }
+    .totals { margin-top: 8px; }
+    .totals .row { font-weight: 700; }
+    .badge { display: inline-block; padding: 4px 8px; border: 1px solid #111; border-radius: 4px; font-size: 12px; margin-top: 6px; }
+    .small { font-size: 12px; }
+    .qr {
+      width: 100px; height: 100px; margin: 8px auto 0;
+      display: grid; place-items: center;
+    }
+    .mono-wide { font-family: var(--mono); word-break: break-all; }
+    .footer { margin-top: 10px; text-align: center; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="panel">
+      <h2>Edit Receipt</h2>
+      <div class="form-grid" id="form">
+        <div><label>Receipt No.</label><input type="text" data-bind="receiptNo" value="KH-2025-001"></div>
+        <div><label>Date</label><input type="date" data-bind="date" value="2025-12-15"></div>
+        <div><label>Guest Name</label><input type="text" data-bind="guest" value="Jane Doe"></div>
+        <div><label>Booking Ref</label><input type="text" data-bind="bookingRef" value="BK-98421"></div>
+        <div><label>Room Type</label><input type="text" data-bind="roomType" value="Standard Room"></div>
+        <div><label>Nights</label><input type="number" min="1" data-bind="nights" value="1"></div>
+        <div><label>Rate per Night (UGX)</label><input type="number" min="0" step="1000" data-bind="rate" value="30000"></div>
+        <div><label>Taxes & Fees (UGX)</label><input type="number" min="0" step="1000" data-bind="taxes" value="0"></div>
+        <div>
+          <label>Payment Method</label>
+          <select data-bind="paymentMethod">
+            <option>Mobile Money (MTN)</option><option>Mobile Money (Airtel)</option>
+            <option>Cash</option><option>Card</option><option>Bank Transfer</option>
+          </select>
+        </div>
+        <div><label>Check-in</label><input type="date" data-bind="checkin" value="2025-12-16"></div>
+        <div><label>Check-out</label><input type="date" data-bind="checkout" value="2025-12-17"></div>
+        <div><label>Notes (optional)</label><textarea data-bind="notes">Thank you for staying with us!</textarea></div>
+        <div><label>QR Content (e.g., booking ref or URL)</label><input type="text" data-bind="qr" value="BK-98421"></div>
+      </div>
+      <div class="actions">
+        <button id="downloadBtn">Download as JPG</button>
+      </div>
+    </div>
+
+    <div class="receipt-card">
+      <h2 style="margin-bottom:10px;">Preview</h2>
+      <div class="receipt-wrapper">
+        <div id="receipt" class="receipt">
+          <div class="center">
+            <h1>KIKONI HILLS HOTEL</h1>
+            <div class="small">Kikoni – Makerere, Kampala, Uganda</div>
+            <div class="small">Tel: +256 703490110 • info@kikonihillshotel.ug</div>
+          </div>
+          <div class="line"></div>
+          <div class="row small"><span>Receipt No.</span><span id="r-receiptNo">KH-2025-001</span></div>
+          <div class="row small"><span>Date</span><span id="r-date">2025-12-15</span></div>
+          <div class="row small"><span>Booking Ref</span><span id="r-bookingRef">BK-98421</span></div>
+          <div class="line"></div>
+          <div class="row"><span>Guest</span><span id="r-guest">Jane Doe</span></div>
+          <div class="row"><span>Payment</span><span id="r-paymentMethod">Mobile Money (MTN)</span></div>
+          <div class="row"><span>Room</span><span id="r-roomType">Standard Room</span></div>
+          <div class="row"><span>Nights</span><span id="r-nights">1</span></div>
+          <div class="row"><span>Rate</span><span id="r-rate">UGX 30,000</span></div>
+          <div class="row"><span>Check-in</span><span id="r-checkin">2025-12-16</span></div>
+          <div class="row"><span>Check-out</span><span id="r-checkout">2025-12-17</span></div>
+          <div class="line"></div>
+          <div class="row"><span>Subtotal</span><span id="r-subtotal">UGX 30,000</span></div>
+          <div class="row"><span>Taxes/Fees</span><span id="r-taxes">UGX 0</span></div>
+          <div class="totals">
+            <div class="row"><span>Total Paid</span><span id="r-total">UGX 30,000</span></div>
+          </div>
+          <div class="line"></div>
+          <div class="center">
+            <div class="badge">PAID</div>
+            <div class="qr" id="qr"></div>
+          </div>
+          <div class="line"></div>
+          <div class="footer">
+            <div id="r-notes" class="muted">Thank you for staying with us!</div>
+            <div class="muted mono-wide" style="margin-top:4px;" id="r-ref">BK-98421</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- html2canvas (no SRI to avoid mismatch) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
+  <!-- QRCode library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js" crossorigin="anonymous"></script>
+
+  <script>
+    const binds = {
+      receiptNo: 'r-receiptNo',
+      date: 'r-date',
+      guest: 'r-guest',
+      bookingRef: 'r-bookingRef',
+      roomType: 'r-roomType',
+      nights: 'r-nights',
+      rate: 'r-rate',
+      taxes: 'r-taxes',
+      paymentMethod: 'r-paymentMethod',
+      checkin: 'r-checkin',
+      checkout: 'r-checkout',
+      notes: 'r-notes',
+      qr: 'qr'
+    };
+
+    const formatUGX = (v) => 'UGX ' + (Number(v || 0)).toLocaleString('en-UG');
+
+    let qrInstance;
+    function updateQR(text) {
+      const qrEl = document.getElementById('qr');
+      qrEl.innerHTML = '';
+      qrInstance = new QRCode(qrEl, {
+        text: text || '',
+        width: 100,
+        height: 100,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function recalc() {
+      const data = {};
+      document.querySelectorAll('[data-bind]').forEach(el => data[el.dataset.bind] = el.value);
+
+      const nights = Number(data.nights || 0);
+      const rate = Number(data.rate || 0);
+      const taxes = Number(data.taxes || 0);
+      const subtotal = nights * rate;
+      const total = subtotal + taxes;
+
+      const setText = (id, val) => { const n = document.getElementById(id); if (n) n.textContent = val; };
+      setText(binds.receiptNo, data.receiptNo);
+      setText(binds.date, data.date);
+      setText(binds.guest, data.guest);
+      setText(binds.bookingRef, data.bookingRef);
+      setText(binds.roomType, data.roomType);
+      setText(binds.nights, nights);
+      setText(binds.rate, formatUGX(rate));
+      setText(binds.taxes, formatUGX(taxes));
+      setText('r-subtotal', formatUGX(subtotal));
+      setText('r-total', formatUGX(total));
+      setText(binds.paymentMethod, data.paymentMethod);
+      setText(binds.checkin, data.checkin);
+      setText(binds.checkout, data.checkout);
+      setText(binds.notes, data.notes || 'Thank you for staying with us!');
+      setText('r-ref', data.bookingRef || data.qr || '');
+
+      updateQR(data.qr || data.bookingRef || 'Kikoni Hills Hotel');
+    }
+
+    document.querySelectorAll('[data-bind]').forEach(el => {
+      el.addEventListener('input', recalc);
+      el.addEventListener('change', recalc);
+    });
+    recalc();
+
+    document.getElementById('downloadBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('downloadBtn');
+      btn.disabled = true;
+      btn.textContent = 'Rendering...';
+      const receiptEl = document.getElementById('receipt');
+      try {
+        const canvas = await html2canvas(receiptEl, {
+          backgroundColor: '#ffffff',
+          scale: window.devicePixelRatio * 2
+        });
+        const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+        const link = document.createElement('a');
+        link.href = dataURL;
+        link.download = 'kikoni-hills-receipt.jpg';
+        link.click();
+      } catch (e) {
+        alert('Could not generate image. Please try again.');
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Download as JPG';
+      }
+    });
+  </script>
+</body>
+</html>
